@@ -3,7 +3,7 @@
 This particular example repository has 3 stacks:
  - StackDependencyStack (main stack)
  - DependentStack1 (depends on StackDependencyStack)
- - dependentStack2 (depends on StackDependencyStack)
+ - DependentStack2 (depends on StackDependencyStack)
 
 To deply the stack, run the following commands:
 ```
