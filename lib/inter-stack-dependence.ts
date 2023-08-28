@@ -68,11 +68,17 @@ export interface InterStackDependenceProps {
  * The stack that the depender stack depends on is referred to as dependee stack
  */
 export class InterStackDependence extends Construct {
+  /**
+   * Retrieves the value that was set in the dependee stack as callBackData property
+   * Should be only used when dependenceType is depender
+   */
+  dependeeReturnData: any;
 
   constructor(scope: Construct, id: string, props: InterStackDependenceProps) {
     super(scope, id);
 
     const ssmParameterPrefix = 'dependency';
+    const uniqueId = 'configuration';
 
     if (props.dependenceType === DepenednceType.DEPENDER) {
       if (!props.dependeeStackName) {
@@ -81,18 +87,35 @@ export class InterStackDependence extends Construct {
       if(props.callbackData) {
         throw new Error('callbackData can only be set in case the stack is DEPENDEE stack')
       }
-      const waitConditionHanle = new cloudformation.CfnWaitConditionHandle(this, 'WaitHandle');
+      const waitConditionHandle = new cloudformation.CfnWaitConditionHandle(this, 'WaitHandle');
       const waitCondition = new cloudformation.CfnWaitCondition(this, 'WaitCondition', {
-        handle: waitConditionHanle.ref,
+        handle: waitConditionHandle.ref,
         timeout: props.timeoutSeconds?.toString() ?? '3600',
       });
       const ssmParameter = `/${ssmParameterPrefix}/${props.dependeeStackName}/${Stack.of(scope).stackName}`;
       
       new ssm.StringParameter(this, 'SSMParam', {
         parameterName: ssmParameter,
-        stringValue: waitConditionHanle.ref
+        stringValue: waitConditionHandle.ref
       });
       (props.dependencyResource.node.defaultChild as CfnResource).addDependency(waitCondition);
+
+      const callbackDataParserLambda = new nodejs.NodejsFunction(this, 'CallbackDataParser', {
+        entry: './lib/lambdas/callback-data-parser.ts',
+        environment: {
+          UNIQUE_ID: uniqueId,
+        }
+      })
+      const crHandler = new cr.Provider(this, 'CustomResourceProvider', {
+        onEventHandler: callbackDataParserLambda,
+      })
+      const customResource = new CustomResource(this, 'CallbackDataReaderCustomResource', {
+        serviceToken: crHandler.serviceToken,
+        properties: {
+          Data: waitCondition.attrData,
+        }
+      })
+      this.dependeeReturnData = customResource.getAtt('DependeeReturnData')
     }
 
     if (props.dependenceType === DepenednceType.DEPENDEE) {
@@ -107,6 +130,7 @@ export class InterStackDependence extends Construct {
           DEPENDENT_STACKS: props.dependerStackNames.toString(),
           SSM_PARAMETER_PREFIX: ssmParameterPrefix,
           CALLBACK_DATA: props.callbackData ?? '',
+          UNIQUE_ID: uniqueId,
         }
       });
       

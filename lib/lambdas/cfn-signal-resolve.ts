@@ -21,6 +21,7 @@ export const handler = async (event: any) => {
     const dependentStacks = process.env.DEPENDENT_STACKS;
     const ssmParameterPrefix = process.env.SSM_PARAMETER_PREFIX;
     const callbackData = process.env.CALLBACK_DATA;
+    const uniqueId = process.env.UNIQUE_ID;
 
     for (const dependentStack of dependentStacks!.split(',')) {
         try {
@@ -35,7 +36,7 @@ export const handler = async (event: any) => {
                 method: 'PUT',
                 body: JSON.stringify({
                     Status: 'SUCCESS',
-                    UniqueId: 'configuration',
+                    UniqueId: uniqueId,
                     Data: callbackData,
                 })
             })

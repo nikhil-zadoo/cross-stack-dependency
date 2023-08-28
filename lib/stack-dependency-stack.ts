@@ -13,7 +13,8 @@ export class StackDependencyStack extends Stack {
     new InterStackDependence(this, 'Dependece', {
       dependenceType: DepenednceType.DEPENDEE,
       dependencyResource: bucket,
-      dependerStackNames: props.dependentStacks
+      dependerStackNames: props.dependentStacks,
+      callbackData: bucket.bucketArn,
     })
   }
 }
