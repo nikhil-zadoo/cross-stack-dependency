@@ -8,10 +8,11 @@ const dependentStack1 = 'dependent-stack-1';
 const dependentStack2 = 'dependent-stack-2';
 const dependentStacks = [dependentStack1, dependentStack2]
 const mainStack = 'main-stack';
+
 new StackDependencyStack(app, 'StackDependencyStack', {
     dependentStacks,
     mainStack,
-    stackName: mainStack
+    stackName: mainStack,
 });
 new DependentStack(app, 'DependentStack1', {
     dependentStacks,
@@ -21,5 +22,5 @@ new DependentStack(app, 'DependentStack1', {
 new DependentStack(app, 'DependentStack2', {
     dependentStacks,
     mainStack,
-    stackName: dependentStack2
+    stackName: dependentStack2,
 })

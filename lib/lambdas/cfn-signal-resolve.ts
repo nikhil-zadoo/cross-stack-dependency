@@ -1,23 +1,30 @@
 import * as ssm from '@aws-sdk/client-ssm'
-import * as events from 'aws-lambda';
 import fetch from 'node-fetch'
 
 const ssmClient = new ssm.SSMClient()
 export const handler = async (event: any) => {
-    console.log(`Got evet : ${event}`)
+    console.log(`Got event : ${event}`)
     if (event.StackId) {
-        console.log("Triggered as a custom resource")
+        if (event.RequestType === 'Delete' || event.RequestType === 'Update')
+        {
+            console.log(`Got a ${event.RequestType} request. Nothing to do further`)
+            return
+        }
+        console.log(`Got a ${event.RequestType} request. Triggered as a custom resource`)
     }
     else {
         console.log("Triggered via Eventbridge")
     }
-    let url: string
-    // Read the SSM Parameter
-    const mainStack = process.env.MAIN_STACK
-    const dependentStacks = process.env.DEPENDENT_STACKS
+
+    let url: string;
+    const mainStack = process.env.MAIN_STACK;
+    const dependentStacks = process.env.DEPENDENT_STACKS;
+    const ssmParameterPrefix = process.env.SSM_PARAMETER_PREFIX;
+    const callbackData = process.env.CALLBACK_DATA;
+
     for (const dependentStack of dependentStacks!.split(',')) {
         try {
-            const ssmParameter = `/dependency/${mainStack}/${dependentStack}`;
+            const ssmParameter = `/${ssmParameterPrefix}/${mainStack}/${dependentStack}`;
             console.log(`Trying to read SSM Parameter: ${ssmParameter}`)
             const paramResponse = await ssmClient.send(new ssm.GetParameterCommand({
                 Name: ssmParameter
@@ -29,7 +36,7 @@ export const handler = async (event: any) => {
                 body: JSON.stringify({
                     Status: 'SUCCESS',
                     UniqueId: 'configuration',
-                    Data: 'Dummy'
+                    Data: callbackData,
                 })
             })
         }
